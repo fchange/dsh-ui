@@ -128,27 +128,31 @@ export function Sidebar({
               filtered.length === 0 ? (
                 <div className="px-2 py-6 text-center text-xs text-ink-3">没有匹配的会话</div>
               ) : (
-                filtered.map((session) => (
-                  <SessionRow
-                    key={session.id}
-                    session={session}
-                    selected={session.id === activeSessionId}
-                    running={session.id === runningSessionId}
-                    meta={workspaceBySession.get(session.id)?.title ?? session.updatedAt}
-                    onSelect={() => { onSelectSession(session.id) }}
-                    onRename={() => { onRenameSession(session.id) }}
-                    onDelete={() => { onDeleteSession(session.id) }}
-                  />
-                ))
+                <div className="flex flex-col gap-0.5">
+                  {filtered.map((session) => (
+                    <SessionRow
+                      key={session.id}
+                      session={session}
+                      selected={session.id === activeSessionId}
+                      running={session.id === runningSessionId}
+                      meta={workspaceBySession.get(session.id)?.title ?? session.updatedAt}
+                      onSelect={() => { onSelectSession(session.id) }}
+                      onRename={() => { onRenameSession(session.id) }}
+                      onDelete={() => { onDeleteSession(session.id) }}
+                    />
+                  ))}
+                </div>
               )
             ) : (
               <>
-                {workspaces.map((workspace) => {
+                <div className="flex flex-col gap-1">
+                  {workspaces.map((workspace) => {
                   const open = openGroups.includes(workspace.id)
                   const current = workspace.sessionIds.includes(activeSessionId)
                   return (
-                    <div key={workspace.id} className="mb-1">
+                    <div key={workspace.id} className="flex flex-col gap-0.5">
                       <NavRow
+                        variant="workspace"
                         title={workspace.title}
                         onSelect={() => {
                           setOpenGroups((currentGroups) =>
@@ -157,23 +161,21 @@ export function Sidebar({
                               : [...currentGroups, workspace.id],
                           )
                         }}
-                        leading={(
-                          <span className="inline-flex items-center gap-1.5">
-                            <ChevronRight
-                              className={cn('text-ink-3 transition-transform duration-150', open && 'rotate-90')}
-                              size={12}
-                              strokeWidth={1.75}
-                            />
-                            {open
-                              ? <FolderOpen className={cn(current && 'text-info')} size={16} strokeWidth={1.75} />
-                              : <FolderClosed className={cn(current && 'text-info')} size={16} strokeWidth={1.75} />}
-                          </span>
+                        leading={open
+                          ? <FolderOpen className={cn(current && 'text-info')} size={16} strokeWidth={1.75} />
+                          : <FolderClosed className={cn(current && 'text-info')} size={16} strokeWidth={1.75} />}
+                        hoverLeading={(
+                          <ChevronRight
+                            className={cn('transition-transform duration-150', open && 'rotate-90')}
+                            size={12}
+                            strokeWidth={1.75}
+                          />
                         )}
                         menu={(
                           <span className="inline-flex items-center">
                             <IconButton
                               label="在此新建会话"
-                              className="size-6 text-ink-3"
+                              className="size-4 text-ink-3"
                               onPointerDown={(event) => { event.stopPropagation() }}
                               onClick={(event) => {
                                 event.stopPropagation()
@@ -192,7 +194,7 @@ export function Sidebar({
                             >
                               <button
                                 type="button"
-                                className="inline-flex size-6 items-center justify-center rounded-md border-none bg-transparent text-ink-3 hover:bg-hover-solid"
+                                className="inline-flex size-4 items-center justify-center rounded border-none bg-transparent text-ink-3 hover:text-ink"
                                 onPointerDown={(event) => { event.stopPropagation() }}
                                 onClick={(event) => { event.stopPropagation() }}
                               >
@@ -221,11 +223,12 @@ export function Sidebar({
                     </div>
                   )
                 })}
+                </div>
                 <NavRow
                   title="新工作区"
                   leading={<Plus size={16} strokeWidth={1.75} />}
                   onSelect={onCreateWorkspace}
-                  className="mt-1 text-ink-2"
+                  className="mt-1.5 text-ink-2"
                 />
               </>
             )}
@@ -283,6 +286,7 @@ function SessionRow({
 }) {
   return (
     <NavRow
+      variant="session"
       selected={selected}
       indent={indent}
       title={session.title}
@@ -299,7 +303,7 @@ function SessionRow({
         >
           <button
             type="button"
-            className="inline-flex size-6 items-center justify-center rounded-md border-none bg-transparent text-ink-3 hover:bg-hover-solid"
+            className="inline-flex size-4 items-center justify-center rounded border-none bg-transparent text-ink-3 hover:text-ink"
             onPointerDown={(event) => { event.stopPropagation() }}
             onClick={(event) => { event.stopPropagation() }}
           >

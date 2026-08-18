@@ -365,6 +365,12 @@ textarea {
   background: var(--dsh-scrollbar-thumb-hover);
 }
 
+@keyframes nav-row-in {
+  from {
+    opacity: 0;
+  }
+}
+
 @keyframes dsh-state-dot-chase {
   0%,
   12.4% {

@@ -95,7 +95,7 @@ const SECTIONS: SectionMeta[] = [
   { id: 'userbubble', label: 'UserBubble', group: '组合', source: 'UserBubble', note: '右对齐用户气泡。r22，bubble token。', usage: '<UserBubble>把侧栏折叠做成 slide + crossfade</UserBubble>' },
   { id: 'assistant', label: 'AssistantText', group: '组合', source: 'AssistantText', note: '助手正文。hover 出现复制。', usage: '<AssistantText text="收到。用 `--dsw-alias-*`。" />' },
   { id: 'toolrow', label: 'ToolRow', group: '组合', source: 'Item + StateDot', note: '工具调用行。点开详情。', usage: '<ToolRow name="read" title="SidebarRoot.tsx" state="done" />' },
-  { id: 'navrow', label: 'NavRow', group: '组合', source: 'Item', note: '侧栏行。选中、缩进、hover 露出菜单。', usage: '<NavRow title="侧栏折叠动画" meta="今天" selected />' },
+  { id: 'navrow', label: 'NavRow', group: '组合', source: 'DSH Sidebar + Tailwind', note: '侧栏行。workspace / session / action 三种变体，支持选中、缩进及 hover 操作。', usage: '<NavRow variant="session" title="侧栏折叠动画" meta="今天" selected />' },
   { id: 'workspacechip', label: 'WorkspaceChip', group: '组合', source: 'Button + Menu', note: '工作区芯片。点选一项会改 label 和文件夹开合。', usage: '<WorkspaceChip value={id} onValueChange={setId} items={items} />' },
   { id: 'catalog', label: 'Catalog', group: '组合', source: 'Sidebar + ScrollArea', note: '左边目录壳。Header / Body / Footer，行用 NavRow。', usage: '<Catalog>\n  <CatalogHeader />\n  <CatalogBody><NavRow /></CatalogBody>\n</Catalog>' },
   { id: 'inspector', label: 'Inspector', group: '组合', source: 'ScrollArea + Tabs', note: '右边动态侧栏。Header / Tabs / Body / Meta，内容由调用方填。', usage: '<Inspector>\n  <InspectorHeader title="会话" onClose={...} />\n  <InspectorBody>...</InspectorBody>\n</Inspector>' },
@@ -217,18 +217,20 @@ export function Gallery({
           </CatalogHeader>
           <CatalogBody>
             {grouped.map((bucket) => (
-              <div key={bucket.group} className="mb-3">
+              <div key={bucket.group} className="mb-1">
                 <div className="px-2 pb-1 text-[11px] tracking-wide text-ink-cap uppercase">
                   {bucket.group}
                 </div>
-                {bucket.items.map((item) => (
-                  <NavRow
-                    key={item.id}
-                    title={item.label}
-                    selected={item.id === active}
-                    onSelect={() => { select(item.id) }}
-                  />
-                ))}
+                <div className="flex flex-col gap-0.5">
+                  {bucket.items.map((item) => (
+                    <NavRow
+                      key={item.id}
+                      title={item.label}
+                      selected={item.id === active}
+                      onSelect={() => { select(item.id) }}
+                    />
+                  ))}
+                </div>
               </div>
             ))}
           </CatalogBody>
@@ -595,24 +597,24 @@ function StageBody({
       return (
         <div className="w-full max-w-[280px] rounded-xl border border-border-l2 bg-sidebar p-2">
           <NavRow
+            variant="workspace"
             title="工作区"
             onSelect={() => { setGroupOpen((current) => !current) }}
-            leading={(
-              <span className="inline-flex items-center gap-1.5">
-                <ChevronDown
-                  className={cn('text-ink-3 transition-transform duration-150', !groupOpen && '-rotate-90')}
-                  size={12}
-                  strokeWidth={1.75}
-                />
-                {groupOpen
-                  ? <FolderOpen size={16} strokeWidth={1.75} />
-                  : <FolderClosed size={16} strokeWidth={1.75} />}
-              </span>
+            leading={groupOpen
+              ? <FolderOpen size={16} strokeWidth={1.75} />
+              : <FolderClosed size={16} strokeWidth={1.75} />}
+            hoverLeading={(
+              <ChevronDown
+                className={cn('transition-transform duration-150', !groupOpen && '-rotate-90')}
+                size={12}
+                strokeWidth={1.75}
+              />
             )}
           />
           {groupOpen && (
-            <>
+            <div className="flex flex-col gap-0.5">
               <NavRow
+                variant="session"
                 title="侧栏折叠动画"
                 meta="今天"
                 selected
@@ -636,8 +638,8 @@ function StageBody({
                   </Menu>
                 )}
               />
-              <NavRow title="组件库三段式" meta="昨天" indent />
-            </>
+              <NavRow variant="session" title="组件库三段式" meta="昨天" indent />
+            </div>
           )}
         </div>
       )
@@ -661,9 +663,11 @@ function StageBody({
               <div className="px-1 py-2 text-sm font-medium">目录</div>
             </CatalogHeader>
             <CatalogBody>
-              <NavRow title="工作区" leading={<FolderOpen size={16} strokeWidth={1.75} />} />
-              <NavRow title="侧栏折叠动画" meta="今天" selected indent />
-              <NavRow title="暗色主题 token" meta="昨天" indent />
+              <div className="flex flex-col gap-0.5">
+                <NavRow variant="workspace" title="工作区" leading={<FolderOpen size={16} strokeWidth={1.75} />} />
+                <NavRow variant="session" title="侧栏折叠动画" meta="今天" selected indent />
+                <NavRow variant="session" title="暗色主题 token" meta="昨天" indent />
+              </div>
             </CatalogBody>
             <CatalogFooter>
               <NavRow title="设置" leading={<Settings size={16} strokeWidth={1.75} />} />

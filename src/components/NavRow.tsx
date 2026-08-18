@@ -1,62 +1,82 @@
 import type { ReactNode } from 'react'
-import { Item, ItemActions } from '@/components/ui/item'
 import { cn } from '@/lib/utils'
 
+export type NavRowVariant = 'workspace' | 'session' | 'action'
+
 export function NavRow({
+  variant = 'action',
   selected = false,
   indent = false,
   leading,
+  hoverLeading,
   title,
   meta,
   menu,
   onSelect,
   className,
 }: {
+  variant?: NavRowVariant
   selected?: boolean
   indent?: boolean
   leading?: ReactNode
+  /** Workspace rows can replace their folder glyph with a chevron on hover. */
+  hoverLeading?: ReactNode
   title: string
   meta?: ReactNode
   menu?: ReactNode
   onSelect?: () => void
   className?: string
 }) {
+  const session = variant === 'session'
+  const workspace = variant === 'workspace'
+
   return (
-    <Item
-      size="xs"
+    <div
+      role="treeitem"
+      aria-selected={session ? selected : undefined}
       className={cn(
-        'group h-8 flex-nowrap rounded-lg border-transparent px-2 py-0 hover:bg-hover has-[[data-state=open]]:bg-hover',
+        'group/navrow flex w-full cursor-pointer select-none items-center rounded-lg px-2 text-sm text-ink hover:bg-hover has-[[data-state=open]]:bg-hover',
+        workspace ? 'h-[34px] gap-1.5' : 'h-8',
+        session && 'animate-[nav-row-in_150ms_ease-out] gap-0',
         selected && 'bg-hover',
-        indent && 'pl-7',
+        indent && 'pl-[30px]',
         className,
       )}
+      onClick={onSelect}
     >
-      <button
-        type="button"
-        className="flex min-w-0 flex-1 cursor-pointer items-center gap-1.5 overflow-hidden border-none bg-transparent p-0 text-left text-sm text-ink"
-        onClick={onSelect}
-      >
-        {leading != null && (
-          <span className="inline-flex shrink-0 items-center text-ink [&_svg]:pointer-events-none">
-            {leading}
-          </span>
-        )}
-        <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
-      </button>
-      {(meta != null || menu != null) && (
-        <ItemActions className="relative ml-1 h-6 shrink-0 justify-end">
-          {meta != null && (
-            <span className="text-[11px] text-ink-cap group-hover:invisible group-has-[[data-state=open]]:invisible">
-              {meta}
-            </span>
+      {(session || leading != null || hoverLeading != null) && (
+        <span
+          className={cn(
+            'inline-flex h-5 w-4 shrink-0 items-center justify-center text-ink-3 [&_svg]:pointer-events-none',
+            workspace && 'group-hover/navrow:hidden group-has-[[data-state=open]]/navrow:hidden',
           )}
-          {menu != null && (
-            <div className="absolute inset-y-0 right-0 flex items-center opacity-0 pointer-events-none group-hover:pointer-events-auto group-hover:opacity-100 group-has-[[data-state=open]]:pointer-events-auto group-has-[[data-state=open]]:opacity-100">
-              {menu}
-            </div>
-          )}
-        </ItemActions>
+        >
+          {leading}
+        </span>
       )}
-    </Item>
+      {workspace && hoverLeading != null && (
+        <span className="hidden h-5 w-4 shrink-0 items-center justify-center text-ink-cap group-hover/navrow:inline-flex group-has-[[data-state=open]]/navrow:inline-flex [&_svg]:pointer-events-none">
+          {hoverLeading}
+        </span>
+      )}
+      <span
+        className={cn(
+          'min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap leading-5',
+          session && 'ml-1 mr-1.5',
+        )}
+      >
+        {title}
+      </span>
+      {meta != null && (
+        <span className="shrink-0 text-xs leading-5 text-ink-3 group-hover/navrow:hidden group-has-[[data-state=open]]/navrow:hidden">
+          {meta}
+        </span>
+      )}
+      {menu != null && (
+        <span className="hidden h-5 shrink-0 items-center gap-3 text-ink-3 group-hover/navrow:inline-flex group-has-[[data-state=open]]/navrow:inline-flex [&_button]:size-4 [&_button]:rounded [&_svg]:size-4">
+          {menu}
+        </span>
+      )}
+    </div>
   )
 }
