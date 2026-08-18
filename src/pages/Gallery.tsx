@@ -152,6 +152,7 @@ export function Gallery({
   const [pill, setPill] = useState('chat')
   const [modalOpen, setModalOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [inspectorPane, setInspectorPane] = useState('note')
 
   const section = SECTIONS.find((item) => item.id === active) ?? SECTIONS[0]
   const grouped = useMemo(() => GROUPS.map((group) => ({
@@ -171,6 +172,7 @@ export function Gallery({
 
   const select = (id: SectionId) => {
     setActive(id)
+    setInspectorPane('note')
   }
 
   const preview = (
@@ -209,40 +211,31 @@ export function Gallery({
       </header>
 
       <div className="grid min-h-0 flex-1 grid-cols-1 lg:grid-cols-[220px_minmax(0,1fr)_320px]">
-        <nav className="flex gap-1 overflow-x-auto border-b border-border-l1 bg-sidebar px-2 py-2 lg:flex-col lg:overflow-y-auto lg:border-r lg:border-b-0 lg:px-3 lg:py-4">
-          {grouped.map((bucket, groupIndex) => (
-            <div key={bucket.group} className="flex items-center gap-1 lg:mb-3 lg:block">
-              <div
-                className="hidden px-2 pb-1 text-[11px] tracking-wide text-ink-cap uppercase lg:block"
-                style={reduce ? undefined : { animation: `gallery-rail-in 280ms var(--ds-ease-in-out) ${groupIndex * 40}ms both` }}
-              >
-                {bucket.group}
-              </div>
-              {bucket.items.map((item, index) => {
-                const selected = item.id === active
-                return (
-                  <button
+        <Catalog className="min-h-[220px] border-b border-border-l1 lg:min-h-0 lg:border-r lg:border-b-0">
+          <CatalogHeader>
+            <div className="px-1 py-2 text-[11px] tracking-wide text-ink-cap uppercase">目录</div>
+          </CatalogHeader>
+          <CatalogBody>
+            {grouped.map((bucket) => (
+              <div key={bucket.group} className="mb-3">
+                <div className="px-2 pb-1 text-[11px] tracking-wide text-ink-cap uppercase">
+                  {bucket.group}
+                </div>
+                {bucket.items.map((item) => (
+                  <NavRow
                     key={item.id}
-                    type="button"
-                    onClick={() => { select(item.id) }}
-                    className={`relative flex h-8 shrink-0 cursor-pointer items-center rounded-lg border-none px-2.5 text-[13px] whitespace-nowrap ${
-                      selected ? 'bg-sidebar-active font-medium text-ink' : 'bg-transparent text-ink-2 hover:bg-sidebar-hover'
-                    }`}
-                    style={reduce ? undefined : { animation: `gallery-rail-in 320ms var(--ds-ease-in-out) ${groupIndex * 40 + index * 28}ms both` }}
-                  >
-                    {selected && (
-                      <motion.span
-                        layoutId={reduce ? undefined : 'gallery-nav-dot'}
-                        className="absolute left-1 size-1 rounded-full bg-info"
-                      />
-                    )}
-                    <span className={selected ? 'pl-2' : ''}>{item.label}</span>
-                  </button>
-                )
-              })}
-            </div>
-          ))}
-        </nav>
+                    title={item.label}
+                    selected={item.id === active}
+                    onSelect={() => { select(item.id) }}
+                  />
+                ))}
+              </div>
+            ))}
+          </CatalogBody>
+          <CatalogFooter>
+            <NavRow title="回到 Demo" onSelect={() => { window.location.hash = '#/' }} />
+          </CatalogFooter>
+        </Catalog>
 
         <section className="gallery-stage relative min-h-0 overflow-hidden">
           <div className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-[linear-gradient(180deg,var(--dsw-alias-bg-base),transparent)]" />
@@ -271,23 +264,21 @@ export function Gallery({
           </div>
         </section>
 
-        <aside className="min-h-0 overflow-y-auto border-t border-border-l2 bg-sidebar lg:border-t-0 lg:border-l">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={active}
-              initial={reduce ? false : { opacity: 0, x: 16 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={reduce ? undefined : { opacity: 0, x: 8 }}
-              transition={{ duration: 0.24, ease: [0.4, 0, 0.2, 1] }}
-              className="flex flex-col gap-5 p-5"
-            >
-              <div>
-                <div className="mb-1 text-[11px] tracking-wide text-ink-cap uppercase">说明</div>
-                <p className="m-0 text-[13px] leading-5 text-ink-2">{section.note}</p>
-              </div>
+        <Inspector className="min-w-0 border-t border-border-l2 lg:border-t-0 lg:border-l">
+          <InspectorHeader title={section.label} />
+          <InspectorTabs
+            value={inspectorPane}
+            onValueChange={setInspectorPane}
+            items={[
+              { id: 'note', label: '说明' },
+              { id: 'usage', label: '用法' },
+            ]}
+          />
+          <InspectorBody frameKey={`${active}-${inspectorPane}`}>
+            {inspectorPane === 'usage' ? (
               <div>
                 <div className="mb-2 flex items-center justify-between">
-                  <div className="text-[11px] tracking-wide text-ink-cap uppercase">用法</div>
+                  <div className="text-[11px] tracking-wide text-ink-cap uppercase">代码</div>
                   <button
                     type="button"
                     className="inline-flex h-7 cursor-pointer items-center gap-1 rounded-lg border-none bg-transparent px-2 text-[12px] text-ink-2 hover:bg-hover"
@@ -301,15 +292,22 @@ export function Gallery({
                   {section.usage}
                 </pre>
               </div>
-              <div>
-                <div className="mb-2 text-[11px] tracking-wide text-ink-cap uppercase">试一下</div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                <p className="m-0 text-[13px] leading-5 text-ink-2">{section.note}</p>
+                <InspectorMeta
+                  items={[
+                    { label: '分组', value: section.group },
+                    { label: '来源', value: <span className="font-mono text-[12px]">{section.source}</span> },
+                  ]}
+                />
                 <p className="m-0 text-[12px] leading-[18px] text-ink-3">
-                  中间是活预览：按钮、输入、菜单、对话框、Toast 都能点。切左边目录会带过渡。
+                  中间是活预览。切左边目录会换组件。
                 </p>
               </div>
-            </motion.div>
-          </AnimatePresence>
-        </aside>
+            )}
+          </InspectorBody>
+        </Inspector>
       </div>
 
     </div>
