@@ -44,7 +44,7 @@ export function NavRow({
         <span className="min-w-0 flex-1 overflow-hidden text-ellipsis whitespace-nowrap">{title}</span>
       </button>
       {(meta != null || menu != null) && (
-        <ItemActions className="relative ml-1 h-6 min-w-6 shrink-0 justify-end">
+        <ItemActions className="relative ml-1 h-6 shrink-0 justify-end">
           {meta != null && (
             <span className="text-[11px] text-ink-cap group-hover:invisible group-has-[[data-state=open]]:invisible">
               {meta}

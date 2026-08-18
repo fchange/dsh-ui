@@ -45,10 +45,16 @@ export function ChatDemo({
   const [model, setModel] = useState<(typeof MODELS)[number]>('deepseek-chat')
   const [view, setView] = useState('chat')
   const [settingsOpen, setSettingsOpen] = useState(false)
+  const [detailsOpen, setDetailsOpen] = useState(false)
   const [detailsId, setDetailsId] = useState<string | undefined>(undefined)
   const [sidebarWidth, setSidebarWidth] = useState(280)
-  const [renameId, setRenameId] = useState<string | undefined>(undefined)
-  const [renameValue, setRenameValue] = useState('')
+  const [edit, setEdit] = useState<
+    | { kind: 'session'; id: string }
+    | { kind: 'workspace'; id: string }
+    | { kind: 'new-workspace' }
+    | undefined
+  >(undefined)
+  const [editValue, setEditValue] = useState('')
 
   const session = sessions.find((item) => item.id === activeId) ?? sessions[0]
   const workspace = workspaces.find((item) => item.sessionIds.includes(session.id))
@@ -56,7 +62,6 @@ export function ChatDemo({
   const detailsBlock = session.blocks.find((block): block is Extract<ChatBlock, { kind: 'tool' }> =>
     block.kind === 'tool' && block.id === detailsId,
   )
-  const detailsOpen = detailsId !== undefined
   const draft = drafts[session.id] ?? ''
 
   const onSidebarWidth = useCallback((px: number) => { setSidebarWidth(px) }, [])
@@ -73,6 +78,11 @@ export function ChatDemo({
     setView('chat')
   }
 
+  const openEdit = (next: NonNullable<typeof edit>, value = '') => {
+    setEdit(next)
+    setEditValue(value)
+  }
+
   const startSession = (workspaceId = workspace?.id ?? workspaces[0]?.id) => {
     if (workspaceId === undefined) return
     const id = `s-${Date.now()}`
@@ -86,15 +96,27 @@ export function ChatDemo({
     selectSession(id)
   }
 
-  const renameSession = () => {
-    if (renameId === undefined) return
-    const title = renameValue.trim()
+  const commitEdit = () => {
+    if (edit === undefined) return
+    const title = editValue.trim()
     if (title === '') return
-    setSessions((current) => current.map((item) => (
-      item.id === renameId ? { ...item, title, updatedAt: '刚刚' } : item
-    )))
-    setRenameId(undefined)
-    notify('已重命名', 'success')
+    if (edit.kind === 'session') {
+      setSessions((current) => current.map((item) => (
+        item.id === edit.id ? { ...item, title, updatedAt: '刚刚' } : item
+      )))
+      notify('已重命名', 'success')
+    } else if (edit.kind === 'workspace') {
+      setWorkspaces((current) => current.map((item) => (
+        item.id === edit.id ? { ...item, title } : item
+      )))
+      notify('工作区已重命名', 'success')
+    } else {
+      const id = `ws-${Date.now()}`
+      setWorkspaces((current) => [...current, { id, title, path: `~/${title}`, sessionIds: [] }])
+      startSession(id)
+      notify('已创建工作区', 'success')
+    }
+    setEdit(undefined)
   }
 
   const deleteSession = (id: string) => {
@@ -121,6 +143,26 @@ export function ChatDemo({
     }
     if (activeId === id && nextActive !== undefined) selectSession(nextActive)
     notify('已删除会话', 'info')
+  }
+
+  const deleteWorkspace = (id: string) => {
+    if (workspaces.length <= 1) {
+      notify('至少保留一个工作区', 'warning')
+      return
+    }
+    const target = workspaces.find((item) => item.id === id)
+    const removed = new Set(target?.sessionIds ?? [])
+    const remainingSessions = sessions.filter((item) => !removed.has(item.id))
+    const remainingWorkspaces = workspaces.filter((item) => item.id !== id)
+    setSessions(remainingSessions)
+    setWorkspaces(remainingWorkspaces)
+    if (removed.has(activeId)) {
+      const next = remainingWorkspaces[0]?.sessionIds[0] ?? remainingSessions[0]?.id
+      if (next !== undefined) selectSession(next)
+      else startSession(remainingWorkspaces[0]?.id)
+    }
+    if (detailsId !== undefined && removed.has(session.id)) setDetailsId(undefined)
+    notify('已删除工作区', 'info')
   }
 
   const send = () => {
@@ -201,14 +243,18 @@ export function ChatDemo({
             query={query}
             onQuery={setQuery}
             onToggle={() => { setSidebarCollapsed((value) => !value) }}
-            onNewSession={() => { startSession() }}
+            runningSessionId={running ? session.id : undefined}
+            onNewSession={(workspaceId) => { startSession(workspaceId) }}
             onSelectSession={selectSession}
             onRenameSession={(id) => {
-              const target = sessions.find((item) => item.id === id)
-              setRenameId(id)
-              setRenameValue(target?.title ?? '')
+              openEdit({ kind: 'session', id }, sessions.find((item) => item.id === id)?.title ?? '')
             }}
             onDeleteSession={deleteSession}
+            onRenameWorkspace={(id) => {
+              openEdit({ kind: 'workspace', id }, workspaces.find((item) => item.id === id)?.title ?? '')
+            }}
+            onDeleteWorkspace={deleteWorkspace}
+            onCreateWorkspace={() => { openEdit({ kind: 'new-workspace' }) }}
             onOpenSettings={() => { setSettingsOpen(true) }}
             onOpenGallery={() => { window.location.hash = '#/gallery' }}
           />
@@ -231,10 +277,34 @@ export function ChatDemo({
             blocks={session.blocks}
             view={view}
             onView={setView}
-            onOpenDetails={(id) => { setDetailsId(id) }}
+            detailsOpen={detailsOpen}
+            onToggleDetails={() => {
+              setDetailsOpen((value) => {
+                if (value) setDetailsId(undefined)
+                return !value
+              })
+            }}
+            onOpenDetails={(id) => {
+              setDetailsId(id)
+              setDetailsOpen(true)
+            }}
           />
         )}
-        details={<DetailsPanel block={detailsBlock} onClose={() => { setDetailsId(undefined) }} />}
+        details={(
+          <DetailsPanel
+            session={session}
+            workspace={workspace}
+            block={detailsBlock}
+            model={model}
+            access={access}
+            onClose={() => {
+              setDetailsOpen(false)
+              setDetailsId(undefined)
+            }}
+            onSelectTool={(id) => { setDetailsId(id) }}
+            onBack={() => { setDetailsId(undefined) }}
+          />
+        )}
       />
 
       <Modal
@@ -267,25 +337,27 @@ export function ChatDemo({
       </Modal>
 
       <Modal
-        open={renameId !== undefined}
-        onClose={() => { setRenameId(undefined) }}
-        title="重命名会话"
+        open={edit !== undefined}
+        onClose={() => { setEdit(undefined) }}
+        title={edit?.kind === 'new-workspace' ? '新工作区' : edit?.kind === 'workspace' ? '重命名工作区' : '重命名会话'}
         footer={(
           <>
-            <Button variant="outline" onClick={() => { setRenameId(undefined) }}>取消</Button>
-            <Button variant="primary" onClick={renameSession}>保存</Button>
+            <Button variant="outline" onClick={() => { setEdit(undefined) }}>取消</Button>
+            <Button variant="primary" onClick={commitEdit}>
+              {edit?.kind === 'new-workspace' ? '创建' : '保存'}
+            </Button>
           </>
         )}
       >
         <Input
           className="w-full"
-          value={renameValue}
-          placeholder="会话标题"
-          onChange={(event) => { setRenameValue(event.target.value) }}
+          value={editValue}
+          placeholder={edit?.kind === 'session' ? '会话标题' : '工作区名称'}
+          onChange={(event) => { setEditValue(event.target.value) }}
           onKeyDown={(event) => {
             if (event.key === 'Enter') {
               event.preventDefault()
-              renameSession()
+              commitEdit()
             }
           }}
         />

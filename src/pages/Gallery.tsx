@@ -32,6 +32,8 @@ import { Tabs } from '../components/Tabs'
 import { ToolRow } from '../components/ToolRow'
 import { UserBubble } from '../components/UserBubble'
 import { WorkspaceChip } from '../components/WorkspaceChip'
+import { Catalog, CatalogBody, CatalogFooter, CatalogHeader } from '../components/Catalog'
+import { Inspector, InspectorBody, InspectorHeader, InspectorMeta, InspectorTabs } from '../components/Inspector'
 import { Menu } from '../components/Menu'
 import { Modal } from '../components/Modal'
 import { Pill } from '../components/Pill'
@@ -62,6 +64,8 @@ type SectionId =
   | 'toolrow'
   | 'navrow'
   | 'workspacechip'
+  | 'catalog'
+  | 'inspector'
 
 type SectionMeta = {
   id: SectionId
@@ -80,7 +84,7 @@ const SECTIONS: SectionMeta[] = [
   { id: 'button', label: 'Button', group: '控件', source: 'ui-primitives/Button', note: '胶囊。primary 走墨色主色，发送钮另用 info-fill 蓝。', usage: '<Button variant="primary">新建</Button>\n<Button variant="outline" size="sm">取消</Button>' },
   { id: 'input', label: 'Input', group: '控件', source: 'ui-primitives/Input', note: '32 高、8 圆角。焦点边框走 brand（这套 token 里是墨色）。', usage: '<Input icon={<Search size={14} />} placeholder="搜索会话" />' },
   { id: 'pill', label: 'Pill', group: '控件', source: 'ui-primitives/Pill', note: '24 高芯片。有 onClick 才是按钮。', usage: '<Pill active onClick={...}>对话</Pill>\n<Pill>静态</Pill>' },
-  { id: 'statedot', label: 'StateDot', group: '控件', source: 'ui-primitives/StateDot', note: '完成 / 注意 / 错误是 10px 光晕点。进行中是 3×3 像素追逐。', usage: '<StateDot state="done" />\n<StateDot state="ongoing" />' },
+  { id: 'statedot', label: 'StateDot', group: '控件', source: 'ui-primitives/StateDot', note: '完成 / 注意 / 错误是 10px 光晕点。进行中是 3×3 像素追逐。横向一行、纵向一列；左边指示器强制正方形。', usage: '<StateDot state="done" />\n<StateDot state="ongoing" />' },
   { id: 'iconbutton', label: 'IconButton', group: '控件', source: 'Button icon + Tooltip', note: '图标按钮。带 label 的 Tooltip 和 aria-label。', usage: '<IconButton label="复制"><Copy size={14} /></IconButton>' },
   { id: 'tabs', label: 'Tabs', group: '控件', source: 'ui/tabs line', note: '下划线页签。选中走业务蓝，不是 ink。', usage: '<Tabs value="chat" items={[{ id: \'chat\', label: \'对话\' }]} />' },
   { id: 'tooltip', label: 'Tooltip', group: '浮层', source: 'ui-primitives/Tooltip', note: '锚点下方居中。悬停看文案。', usage: '<Tooltip label="收起侧栏">\n  <Button variant="outline">悬停</Button>\n</Tooltip>' },
@@ -93,6 +97,8 @@ const SECTIONS: SectionMeta[] = [
   { id: 'toolrow', label: 'ToolRow', group: '组合', source: 'Item + StateDot', note: '工具调用行。点开详情。', usage: '<ToolRow name="read" title="SidebarRoot.tsx" state="done" />' },
   { id: 'navrow', label: 'NavRow', group: '组合', source: 'Item', note: '侧栏行。选中、缩进、hover 露出菜单。', usage: '<NavRow title="侧栏折叠动画" meta="今天" selected />' },
   { id: 'workspacechip', label: 'WorkspaceChip', group: '组合', source: 'Button + Menu', note: '工作区芯片。点选一项会改 label 和文件夹开合。', usage: '<WorkspaceChip value={id} onValueChange={setId} items={items} />' },
+  { id: 'catalog', label: 'Catalog', group: '组合', source: 'Sidebar + ScrollArea', note: '左边目录壳。Header / Body / Footer，行用 NavRow。', usage: '<Catalog>\n  <CatalogHeader />\n  <CatalogBody><NavRow /></CatalogBody>\n</Catalog>' },
+  { id: 'inspector', label: 'Inspector', group: '组合', source: 'ScrollArea + Tabs', note: '右边动态侧栏。Header / Tabs / Body / Meta，内容由调用方填。', usage: '<Inspector>\n  <InspectorHeader title="会话" onClose={...} />\n  <InspectorBody>...</InspectorBody>\n</Inspector>' },
 ]
 
 const GROUPS = ['基础', '控件', '浮层', '组合'] as const
@@ -330,6 +336,7 @@ function StageBody({
   onToast: (text: string, level?: NotifyLevel) => void
 }) {
   const [tab, setTab] = useState('chat')
+  const [inspectorTab, setInspectorTab] = useState('output')
   const [workspace, setWorkspace] = useState('dsh')
   const [groupOpen, setGroupOpen] = useState(true)
   switch (id) {
@@ -441,13 +448,23 @@ function StageBody({
       )
     case 'statedot':
       return (
-        <div className="flex flex-wrap items-center justify-center gap-8 text-sm text-ink-2">
-          {(['done', 'ongoing', 'warning', 'error'] as const).map((state: StateDotState) => (
-            <span key={state} className="inline-flex items-center gap-2">
-              <StateDot state={state} />
-              {state}
-            </span>
-          ))}
+        <div className="flex flex-col items-center gap-8">
+          <div className="flex flex-col items-center gap-2">
+            <div className="font-mono text-[11px] text-ink-cap">横向</div>
+            <div className="flex flex-wrap items-center justify-center gap-8">
+              {STATE_DOT_STATES.map((state) => (
+                <StateDotSample key={state} state={state} />
+              ))}
+            </div>
+          </div>
+          <div className="flex flex-col items-center gap-2">
+            <div className="font-mono text-[11px] text-ink-cap">纵向</div>
+            <div className="flex flex-col items-start gap-3">
+              {STATE_DOT_STATES.map((state) => (
+                <StateDotSample key={state} state={state} />
+              ))}
+            </div>
+          </div>
         </div>
       )
     case 'tooltip':
@@ -638,7 +655,67 @@ function StageBody({
           ]}
         />
       )
+    case 'catalog':
+      return (
+        <div className="h-[320px] w-full max-w-[280px] overflow-hidden rounded-xl border border-border-l2">
+          <Catalog>
+            <CatalogHeader>
+              <div className="px-1 py-2 text-sm font-medium">目录</div>
+            </CatalogHeader>
+            <CatalogBody>
+              <NavRow title="工作区" leading={<FolderOpen size={16} strokeWidth={1.75} />} />
+              <NavRow title="侧栏折叠动画" meta="今天" selected indent />
+              <NavRow title="暗色主题 token" meta="昨天" indent />
+            </CatalogBody>
+            <CatalogFooter>
+              <NavRow title="设置" leading={<Settings size={16} strokeWidth={1.75} />} />
+            </CatalogFooter>
+          </Catalog>
+        </div>
+      )
+    case 'inspector':
+      return (
+        <div className="h-[320px] w-full max-w-[320px] overflow-hidden rounded-xl border border-border-l2">
+          <Inspector>
+            <InspectorHeader title="read" onClose={() => { onToast('关闭侧栏', 'info') }} onBack={() => { onToast('返回会话', 'info') }} />
+            <InspectorTabs
+              value={inspectorTab}
+              onValueChange={setInspectorTab}
+              items={[
+                { id: 'output', label: '输出' },
+                { id: 'info', label: '信息' },
+              ]}
+            />
+            <InspectorBody frameKey={inspectorTab}>
+              {inspectorTab === 'info' ? (
+                <InspectorMeta
+                  items={[
+                    { label: '工具', value: 'read' },
+                    { label: '调用', value: 'SidebarRoot.tsx' },
+                    { label: '状态', value: 'done' },
+                  ]}
+                />
+              ) : (
+                <pre className="rounded-xl bg-code p-3 font-mono text-[12px] text-ink-2">collapse is a slide plus crossfade…</pre>
+              )}
+            </InspectorBody>
+          </Inspector>
+        </div>
+      )
   }
+}
+
+const STATE_DOT_STATES: readonly StateDotState[] = ['done', 'ongoing', 'warning', 'error']
+
+function StateDotSample({ state }: { state: StateDotState }) {
+  return (
+    <span className="inline-flex items-center gap-2 text-sm text-ink-2">
+      <span className="inline-grid size-2.5 shrink-0 aspect-square place-items-center overflow-hidden">
+        <StateDot state={state} />
+      </span>
+      {state}
+    </span>
+  )
 }
 
 function Row({ label, children }: { label: string; children: ReactNode }) {

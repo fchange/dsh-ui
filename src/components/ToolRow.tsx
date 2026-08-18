@@ -28,7 +28,7 @@ export function ToolRow({
       )}
     >
       <button type="button" onClick={onClick}>
-        <ItemMedia variant="icon">
+        <ItemMedia className="size-2.5 aspect-square overflow-hidden">
           <StateDot state={state} />
         </ItemMedia>
         <span className="text-[13px] font-medium text-ink-2">{name}</span>

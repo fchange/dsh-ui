@@ -12,11 +12,13 @@ export function Tabs({
   value,
   onValueChange,
   items,
+  compact = false,
   className,
 }: {
   value: string
   onValueChange?: (value: string) => void
   items: TabItem[]
+  compact?: boolean
   className?: string
 }) {
   const reduce = useReducedMotion()
@@ -24,12 +26,21 @@ export function Tabs({
 
   return (
     <UiTabs value={value} onValueChange={onValueChange} className={cn('gap-0', className)}>
-      <TabsList variant="line" className="h-[35px] items-end gap-9 rounded-none bg-transparent p-0 pl-2 group-data-horizontal/tabs:h-[35px]">
+      <TabsList
+        variant="line"
+        className={cn(
+          'items-end rounded-none bg-transparent p-0 group-data-horizontal/tabs:h-[35px]',
+          compact ? 'h-8 gap-4 pl-0' : 'h-[35px] gap-9 pl-2',
+        )}
+      >
         {items.map((item) => (
           <TabsTrigger
             key={item.id}
             value={item.id}
-            className="relative h-auto flex-none rounded-none px-0 pb-[11px] text-[13px] leading-4 font-medium text-ink-3 shadow-none after:hidden group-data-horizontal/tabs:h-auto data-active:bg-transparent data-active:text-info data-active:shadow-none"
+            className={cn(
+              'relative h-auto flex-none rounded-none px-0 text-[13px] leading-4 font-medium text-ink-3 shadow-none after:hidden group-data-horizontal/tabs:h-auto data-active:bg-transparent data-active:text-info data-active:shadow-none',
+              compact ? 'pb-2' : 'pb-[11px]',
+            )}
           >
             {item.label}
             {item.id === value && (

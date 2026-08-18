@@ -1,5 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react'
-import { ChevronDown, Fish, Plus } from 'lucide-react'
+import { ChevronDown, Fish, PanelRight, Plus } from 'lucide-react'
+import { IconButton } from '../components/IconButton'
 import { AssistantText } from '../components/AssistantText'
 import { Composer } from '../components/Composer'
 import { Menu, type MenuItem } from '../components/Menu'
@@ -33,6 +34,8 @@ export function Conversation({
   blocks,
   view,
   onView,
+  detailsOpen,
+  onToggleDetails,
   onOpenDetails,
 }: {
   title: string
@@ -51,6 +54,8 @@ export function Conversation({
   blocks: ChatBlock[]
   view: string
   onView: (value: string) => void
+  detailsOpen: boolean
+  onToggleDetails: () => void
   onOpenDetails: (id: string) => void
 }) {
   const accessLabel = access === 'full' ? 'Full access' : access === 'workspace' ? 'Workspace' : 'Read only'
@@ -66,11 +71,18 @@ export function Conversation({
       )}
 
       {!hero && (
-        <header className="relative shrink-0 px-7 pt-3 pl-5">
-          <div className="flex min-h-8 items-center">
+        <header className="relative shrink-0 px-7 pt-3 pr-3 pl-5">
+          <div className="flex min-h-8 items-center justify-between gap-2">
             <span className="max-w-[280px] overflow-hidden px-2 py-1 text-sm font-medium text-ellipsis whitespace-nowrap text-ink">
               {title}
             </span>
+            <IconButton
+              label={detailsOpen ? '关闭侧栏' : '打开侧栏'}
+              onClick={onToggleDetails}
+              className={detailsOpen ? 'bg-hover text-ink' : undefined}
+            >
+              <PanelRight size={16} strokeWidth={1.75} />
+            </IconButton>
           </div>
           <Tabs value={view} onValueChange={onView} items={[...VIEWS]} />
           <span className="pointer-events-none absolute right-0 bottom-px left-0 h-px bg-border-l2" />

@@ -27,6 +27,8 @@ npm run dev
 | 组合 | `Composer` | Card + Textarea + Button |
 | 组合 | `UserBubble` `AssistantText` `ToolRow` | 对话气泡、正文、工具行 |
 | 组合 | `NavRow` `WorkspaceChip` | 侧栏行、工作区选择 |
+| 组合 | `Catalog` | 左边目录。Sidebar + ScrollArea |
+| 组合 | `Inspector` | 右边动态侧栏。ScrollArea + Tabs |
 
 `src/components/ui/*` 是 shadcn 原件。`src/components/*` 是产品封装，Demo 和 Gallery 只引用这一层。
 
